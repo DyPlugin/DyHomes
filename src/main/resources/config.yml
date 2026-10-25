@@ -1,0 +1,97 @@
+# Main display prefix. Colour codes use the '&' format; MiniMessage tags work on Paper, Purpur and Folia.
+prefix: '&7[&6DyHomes&7]'
+config-version: 1
+
+language:
+  # auto: saved player choice, then client locale; any other value is used for all players and the console.
+  # Available: auto, en, tr, de, es, ru
+  default: auto
+  # If enabled, DyHomes picks the player's Minecraft language when it is one of the available ones.
+  use-player-locale: true
+  # If enabled, /dyhomes language saves the player's choice in players.yml.
+  save-player-choice: true
+
+homes:
+  # Homes a player may have. dyhomes.limit.<n> permissions replace this (the highest wins);
+  # dyhomes.limit.unlimited removes the limit.
+  default-limit: 3
+  # Worlds where /sethome is not allowed, for example [world_nether, events]. Existing homes there still work.
+  disabled-worlds: []
+
+warps:
+  # If true, each warp also needs dyhomes.warp.<name> (or dyhomes.warp.*). Players only see the warps they may use.
+  per-warp-permission: false
+
+spawn:
+  # Teleport new players to the spawn set with /setspawn.
+  on-first-join: true
+  # Respawn at the /setspawn location after death, unless the player has a bed or respawn anchor.
+  on-respawn: true
+  # Without /setspawn, /spawn leads to the main world's spawn.
+  use-world-spawn: true
+  # /setspawn also moves the vanilla world spawn (compass, new chunks loaded around it).
+  set-world-spawn: true
+
+warmup:
+  # Seconds before a teleport; 0 teleports at once. dyhomes.bypass.warmup skips it.
+  seconds: 3
+  cancel-on-move: true
+  cancel-on-damage: true
+
+cooldown:
+  # Seconds before the same kind of teleport can be used again; 0 is no cooldown.
+  home: 0
+  warp: 0
+  spawn: 0
+  # dyhomes.cooldown.<seconds> permissions replace these values for a player or group; the lowest one wins.
+  permission-overrides: true
+
+safety:
+  # Check the destination before teleporting: room to stand, no lava or fire, and ground within a short fall.
+  # An unsafe destination is refused; adding 'force' to the command (for example /home base force) goes anyway.
+  enabled: true
+  # How many blocks of air below the destination still count as safe.
+  max-fall: 3
+
+economy:
+  # Prices need Vault and an economy provider. Without them every action stays free.
+  enabled: false
+  # Price per action; 0 is free. dyhomes.bypass.economy skips all prices.
+  prices:
+    home: 0.0
+    warp: 0.0
+    spawn: 0.0
+    sethome: 0.0
+
+dyclaim:
+  # With DyClaim 1.1.0 or later: homes inside someone else's claim follow that claim's trust.
+  # If DyClaim is installed but cannot answer, the action is refused. dyhomes.bypass.claims skips the check.
+  enabled: true
+  # Right needed to set a home in someone else's claim.
+  set-right: build
+  # Right needed to teleport to a home in someone else's claim. Losing it makes the home unusable, not deleted.
+  use-right: teleport
+
+feedback:
+  sounds:
+    enabled: true
+    # Minecraft sound keys, for example entity.enderman.teleport or block.note_block.pling. Empty plays nothing.
+    warmup: block.note_block.pling
+    success: entity.enderman.teleport
+    failed: block.note_block.bass
+    cancel: block.note_block.bass
+    volume: 1.0
+    pitch: 1.0
+
+integrations:
+  # %dyhomes_count%, %dyhomes_limit%, %dyhomes_remaining% and more when PlaceholderAPI is installed.
+  placeholderapi:
+    enabled: true
+
+updates:
+  # Tell administrators about new DyHomes releases on Modrinth.
+  check: true
+
+metrics:
+  # Anonymous usage statistics on https://bstats.org/plugin/bukkit/DyHomes/34939. Also off when bStats is disabled globally.
+  enabled: true

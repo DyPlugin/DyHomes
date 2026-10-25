@@ -1,0 +1,103 @@
+name: DyHomes
+version: ${version}
+main: dev.dyhomes.DyHomes
+api-version: '1.20'
+folia-supported: true
+description: Homes, warps and spawn in one light plugin, with DyClaim support and English, Turkish, German, Spanish and Russian messages.
+author: Claww
+website: https://github.com/DyPlugin/DyHomes
+softdepend:
+  - DyClaim
+  - PlaceholderAPI
+  - Vault
+
+commands:
+  home:
+    description: Teleport to one of your homes
+    usage: /<command> [name]
+    aliases: [ev, h]
+  homes:
+    description: List your homes
+    usage: /<command>
+    aliases: [evler, evlerim]
+  sethome:
+    description: Set a home where you stand
+    usage: /<command> [name]
+    aliases: [evayarla, evkur, createhome]
+  delhome:
+    description: Delete one of your homes
+    usage: /<command> <name>
+    aliases: [evsil, deletehome, remhome]
+  warp:
+    description: Teleport to a warp
+    usage: /<command> [name]
+  warps:
+    description: List the warps
+    usage: /<command>
+    aliases: [warplar]
+  setwarp:
+    description: Create or move a warp
+    usage: /<command> <name>
+    aliases: [warpayarla, warpkur]
+  delwarp:
+    description: Delete a warp
+    usage: /<command> <name>
+    aliases: [warpsil]
+  spawn:
+    description: Teleport to the spawn
+    usage: /<command>
+  setspawn:
+    description: Set the spawn where you stand
+    usage: /<command>
+    aliases: [spawnayarla]
+  dyhomes:
+    description: DyHomes help, language, reload and import
+    usage: /<command> [help|language|reload|import]
+    aliases: [dyh]
+
+permissions:
+  dyhomes.home:
+    description: Use /home and /homes.
+    default: true
+  dyhomes.sethome:
+    description: Use /sethome and /delhome for your own homes.
+    default: true
+  dyhomes.warp:
+    description: Use /warp and /warps.
+    default: true
+  dyhomes.spawn:
+    description: Use /spawn.
+    default: true
+  dyhomes.setwarp:
+    description: Create and move warps.
+    default: op
+  dyhomes.delwarp:
+    description: Delete warps.
+    default: op
+  dyhomes.setspawn:
+    description: Set the spawn.
+    default: op
+  dyhomes.admin:
+    description: Reload, import and set the server language.
+    default: op
+  dyhomes.admin.others:
+    description: List, use and delete other players' homes with player:home.
+    default: op
+  dyhomes.limit.unlimited:
+    description: No home limit.
+    default: op
+  dyhomes.bypass.cooldown:
+    description: No teleport cooldown.
+    default: op
+  dyhomes.bypass.warmup:
+    description: No teleport warmup.
+    default: op
+  dyhomes.bypass.economy:
+    description: No prices.
+    default: op
+  dyhomes.bypass.claims:
+    description: Set and use homes in any DyClaim claim.
+    default: op
+  dyhomes.bypass.worlds:
+    description: Set homes in worlds listed in homes.disabled-worlds.
+    default: op
