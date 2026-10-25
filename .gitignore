@@ -16,3 +16,4 @@ target/
 
 # Local test servers and release work
 .local/
+/logo.png

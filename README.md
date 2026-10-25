@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/images/logo.png" alt="DyHomes logo" width="128"></p>
+
 # DyHomes — Homes, Warps and Spawn Made Simple
 
 **Set your homes. Share your warps. Always find your way back.**
