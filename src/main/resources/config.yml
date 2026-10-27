@@ -1,6 +1,6 @@
 # Main display prefix. Colour codes use the '&' format; MiniMessage tags work on Paper, Purpur and Folia.
 prefix: '&7[&6DyHomes&7]'
-config-version: 1
+config-version: 2
 
 language:
   # auto: saved player choice, then client locale; any other value is used for all players and the console.
@@ -16,6 +16,20 @@ homes:
   # dyhomes.limit.unlimited removes the limit.
   default-limit: 3
   # Worlds where /sethome is not allowed, for example [world_nether, events]. Existing homes there still work.
+  disabled-worlds: []
+
+public-homes:
+  # Players can open their homes to everyone with /publichome; others visit them with /phome.
+  enabled: true
+  # Public homes per player; dyhomes.bypass.public-limit removes the limit.
+  max-per-player: 3
+
+back:
+  # /back returns to where a player last teleported from or died. Remembered until they leave.
+  enabled: true
+  on-teleport: true
+  on-death: true
+  # Worlds where positions are not remembered, for example [events].
   disabled-worlds: []
 
 warps:
@@ -43,6 +57,7 @@ cooldown:
   home: 0
   warp: 0
   spawn: 0
+  back: 0
   # dyhomes.cooldown.<seconds> permissions replace these values for a player or group; the lowest one wins.
   permission-overrides: true
 
@@ -62,6 +77,7 @@ economy:
     warp: 0.0
     spawn: 0.0
     sethome: 0.0
+    back: 0.0
 
 dyclaim:
   # With DyClaim 1.1.0 or later: homes inside someone else's claim follow that claim's trust.
@@ -82,6 +98,15 @@ feedback:
     cancel: block.note_block.bass
     volume: 1.0
     pitch: 1.0
+
+maps:
+  # Warps as markers on BlueMap, Dynmap and squaremap when they are installed. Dynmap and squaremap are not used on Folia.
+  enabled: true
+  bluemap: true
+  dynmap: true
+  squaremap: true
+  # Also show public homes.
+  public-homes: false
 
 integrations:
   # %dyhomes_count%, %dyhomes_limit%, %dyhomes_remaining% and more when PlaceholderAPI is installed.

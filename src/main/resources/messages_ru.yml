@@ -15,6 +15,8 @@ commands:
   home: "/home"
   warp: "/warp"
   spawn: "/spawn"
+  back: "/back"
+  phome: "/phome"
 general:
   no-permission: "{prefix} &cУ вас нет прав на это."
   player-only: "{prefix} &cЭту команду можно использовать только в игре."
@@ -34,6 +36,10 @@ help:
     - "&6/delhome <имя> &7- Удалить дом"
     - "&6/warp [имя] &7- Телепорт на варп или список варпов"
     - "&6/spawn &7- Телепорт на спавн"
+    - "&6/back &7- Вернуться туда, откуда вы последний раз телепортировались или где умерли"
+    - "&6/publichome <имя> &7- Открыть дом для всех или закрыть его"
+    - "&6/phome <игрок:дом> &7- Посетить открытый дом"
+    - "&6/phomes &7- Список открытых домов"
     - "&6/dyhomes language <auto|en|tr|de|es|ru> &7- Сменить язык"
   admin:
     - "&8&m----------&r &6DyHomes &fАдмин &8&m----------"
@@ -43,11 +49,12 @@ help:
     - "&6/homes <игрок> &7- Список домов игрока"
     - "&6/home <игрок>:<имя> &7- Посетить дом игрока"
     - "&6/delhome <игрок>:<имя> &7- Удалить дом игрока"
-    - "&6/dyhomes import essentials &7- Перенести дома, варпы и спавн из EssentialsX"
+    - "&6/dyhomes import <essentials|huskhomes> &7- Перенести дома, варпы и спавн из EssentialsX или HuskHomes"
     - "&6/dyhomes reload &7- Перезагрузить настройки и сообщения"
 list:
   names: "&7{names}"
   name: "&f{name}"
+  name-public: "&a{name}"
   separator: "&7, "
   hover: "&7Нажмите: &f{command}"
 homes:
@@ -97,17 +104,37 @@ teleport:
   success-home: "{prefix} &aДобро пожаловать домой: &f{name}&a."
   success-warp: "{prefix} &aВы телепортировались на варп &f{name}&a."
   success-spawn: "{prefix} &aВы телепортировались на спавн."
+  success-back: "{prefix} &aВы вернулись."
   charged: "{prefix} &7Списано &f{cost}&7."
 time:
   hours: "{hours} ч {minutes} мин"
   minutes: "{minutes} мин {seconds} сек"
   seconds: "{seconds} сек"
 import:
-  usage: "{prefix} &cИспользуйте &f/dyhomes import essentials&c."
+  usage: "{prefix} &cИспользуйте &f/dyhomes import <essentials|huskhomes>&c."
+  husk-not-found: "{prefix} &cПапка plugins/HuskHomes с базой данных не найдена."
+  husk-database: "{prefix} &cHuskHomes использует базу данных &f{type}&c. Можно перенести только стандартную базу SQLite."
   not-found: "{prefix} &cПапка plugins/Essentials не найдена."
   running: "{prefix} &cИмпорт уже идёт."
   started: "{prefix} &7Чтение данных EssentialsX..."
   done: "{prefix} &aИмпорт завершён: домов &f{homes}&a, варпов &f{warps}&a, спавн: &f{spawn}&a. &7Уже были в DyHomes и сохранены: &f{kept}&7. Пропущено: &f{skipped}&7."
   failed: "{prefix} &cИмпорт остановлен из-за ошибки; проверьте консоль. То, что уже было в DyHomes, не изменено."
+back:
+  disabled: "{prefix} &c/back отключён на этом сервере."
+  none: "{prefix} &cПока некуда возвращаться."
+public:
+  disabled: "{prefix} &cОткрытые дома отключены на этом сервере."
+  usage: "{prefix} &cИспользуйте &f/publichome <имя>&c."
+  limit: "{prefix} &cМожно открыть не больше &f{limit}&c домов."
+  opened: "{prefix} &aДом &f{name} &aтеперь открыт. Другие могут посетить его через &f/phome&a."
+  closed: "{prefix} &aДом &f{name} &aснова закрыт."
+  not-found: "{prefix} &cНет открытого дома, подходящего под &f{name}&c."
+  choose: "{prefix} &7Под &f{name}&7 подходят несколько открытых домов; выберите один:"
+  list: "{prefix} &7Открытые дома &8({count})&7:"
+  none: "{prefix} &7Открытых домов пока нет."
+map:
+  layer: "Варпы"
+  warp: "Варп: {name}"
+  home: "Дом игрока {player}: {name}"
 updates:
   available: "{prefix} &aДоступна новая версия DyHomes: &f{latest} &7(текущая: &f{current}&7) &e{url}"

@@ -3,6 +3,7 @@ package dev.dyhomes.listener;
 import dev.dyhomes.DyHomes;
 import dev.dyhomes.command.SpawnCommands;
 import dev.dyhomes.storage.HomeStore;
+import dev.dyhomes.teleport.BackService;
 import dev.dyhomes.teleport.TeleportService;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -18,18 +19,20 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 
-/** Warmup cancellation, spawn on first join and respawn, and unloading homes when a player leaves. */
+/** Warmup cancellation, /back positions, spawn on first join and respawn, and unloading homes when a player leaves. */
 public class PlayerListener implements Listener {
     private final DyHomes plugin;
     private final TeleportService teleports;
     private final HomeStore homes;
     private final SpawnCommands spawn;
+    private final BackService back;
 
-    public PlayerListener(DyHomes plugin, TeleportService teleports, HomeStore homes, SpawnCommands spawn) {
+    public PlayerListener(DyHomes plugin, TeleportService teleports, HomeStore homes, SpawnCommands spawn, BackService back) {
         this.plugin = plugin;
         this.teleports = teleports;
         this.homes = homes;
         this.spawn = spawn;
+        this.back = back;
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -49,6 +52,7 @@ public class PlayerListener implements Listener {
     /** Another plugin or command moving the player during the warmup counts as moving. */
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onTeleport(PlayerTeleportEvent event) {
+        back.teleported(event.getPlayer(), event.getFrom(), event.getTo());
         if (plugin.getConfig().getBoolean("warmup.cancel-on-move", true) && teleports.hasPending(event.getPlayer())) {
             teleports.cancel(event.getPlayer(), "move");
         }
@@ -64,6 +68,7 @@ public class PlayerListener implements Listener {
     public void onQuit(PlayerQuitEvent event) {
         teleports.cancelSilently(event.getPlayer());
         homes.unload(event.getPlayer().getUniqueId());
+        back.forget(event.getPlayer().getUniqueId());
     }
 
     @EventHandler
@@ -73,7 +78,10 @@ public class PlayerListener implements Listener {
         if (plugin.spawnStore().spawn() == null) return; // Only a spawn set with /setspawn moves new players.
         plugin.scheduler().runLater(player, () -> {
             Location destination = spawn.spawnLocation();
-            if (player.isOnline() && destination != null) teleports.teleportNow(player, destination);
+            if (player.isOnline() && destination != null) {
+                back.ignoreNext(player.getUniqueId());
+                teleports.teleportNow(player, destination);
+            }
         }, 2L);
     }
 
@@ -94,6 +102,7 @@ public class PlayerListener implements Listener {
     public void onDeath(PlayerDeathEvent event) {
         Player player = event.getEntity();
         teleports.cancelSilently(player);
+        back.died(player, player.getLocation());
         if (!Scheduler.FOLIA || !plugin.getConfig().getBoolean("spawn.on-respawn", true) || plugin.spawnStore().spawn() == null) return;
         if (player.getBedSpawnLocation() != null) return;
         awaitRespawn(player, 0);
@@ -107,7 +116,10 @@ public class PlayerListener implements Listener {
                 return;
             }
             Location destination = spawn.spawnLocation();
-            if (destination != null) teleports.teleportNow(player, destination);
+            if (destination != null) {
+                back.ignoreNext(player.getUniqueId());
+                teleports.teleportNow(player, destination);
+            }
         }, 10L);
     }
 }

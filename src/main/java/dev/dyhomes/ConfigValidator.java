@@ -17,15 +17,18 @@ final class ConfigValidator {
         bounded(config, "homes.default-limit", 0, 100000);
         bounded(config, "warmup.seconds", 0, 3600);
         bounded(config, "safety.max-fall", 0, 64);
-        for (String kind : Set.of("home", "warp", "spawn")) bounded(config, "cooldown." + kind, 0, Integer.MAX_VALUE);
-        for (String action : Set.of("home", "warp", "spawn", "sethome")) price(config, "economy.prices." + action);
+        bounded(config, "public-homes.max-per-player", 0, 100000);
+        for (String kind : Set.of("home", "warp", "spawn", "back")) bounded(config, "cooldown." + kind, 0, Integer.MAX_VALUE);
+        for (String action : Set.of("home", "warp", "spawn", "sethome", "back")) price(config, "economy.prices." + action);
         stringList(config, "homes.disabled-worlds");
+        stringList(config, "back.disabled-worlds");
         for (String path : Set.of("dyclaim.set-right", "dyclaim.use-right")) {
             if (config.contains(path) && !Set.of("build", "containers", "doors", "trapdoors", "redstone", "entities", "teleport")
                     .contains(config.getString(path, ""))) invalid(path, "expected a DyClaim right such as build or teleport");
         }
         for (String key : config.getKeys(true)) {
-            if ((key.endsWith(".enabled") || key.endsWith("-permission") || key.startsWith("spawn.")
+            if ((key.endsWith(".enabled") || key.endsWith("-permission") || key.startsWith("spawn.") || key.startsWith("maps.")
+                    || key.startsWith("back.on-")
                     || key.endsWith(".check") || key.endsWith("-overrides"))
                     && !config.isConfigurationSection(key) && !(config.get(key) instanceof Boolean)) {
                 invalid(key, "expected true or false");

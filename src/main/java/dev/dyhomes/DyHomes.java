@@ -1,6 +1,7 @@
 package dev.dyhomes;
 
 import dev.dyhomes.claim.ClaimAccess;
+import dev.dyhomes.command.BackCommand;
 import dev.dyhomes.command.DyHomesCommand;
 import dev.dyhomes.command.HomeCommands;
 import dev.dyhomes.command.SpawnCommands;
@@ -9,12 +10,15 @@ import dev.dyhomes.economy.EconomyService;
 import dev.dyhomes.lang.Language;
 import dev.dyhomes.lang.MessageService;
 import dev.dyhomes.listener.PlayerListener;
+import dev.dyhomes.map.MapService;
 import dev.dyhomes.rank.RankRules;
 import dev.dyhomes.scheduler.Scheduler;
 import dev.dyhomes.storage.HomeStore;
 import dev.dyhomes.storage.PlayerDataStore;
+import dev.dyhomes.storage.PublicHomeIndex;
 import dev.dyhomes.storage.SpawnStore;
 import dev.dyhomes.storage.WarpStore;
+import dev.dyhomes.teleport.BackService;
 import dev.dyhomes.teleport.TeleportService;
 import dev.dyhomes.update.ModrinthUpdateChecker;
 import org.bukkit.Location;
@@ -42,6 +46,9 @@ public class DyHomes extends JavaPlugin {
     private HomeStore homes;
     private WarpStore warps;
     private SpawnStore spawns;
+    private PublicHomeIndex publicHomes;
+    private BackService back;
+    private MapService maps;
     private MessageService messages;
     private RankRules ranks;
     private EconomyService economy;
@@ -69,6 +76,8 @@ public class DyHomes extends JavaPlugin {
         homes = new HomeStore(getDataFolder(), getLogger());
         warps = new WarpStore(getDataFolder(), getLogger());
         spawns = new SpawnStore(getDataFolder(), getLogger());
+        publicHomes = new PublicHomeIndex(getDataFolder(), getLogger());
+        back = new BackService(this::getConfig);
         messages = new MessageService(this, playerData);
         ranks = new RankRules(this::getConfig);
         economy = new EconomyService(this);
@@ -76,16 +85,21 @@ public class DyHomes extends JavaPlugin {
         teleports = new TeleportService(this, messages, economy, claims, scheduler, ranks);
         spawnCommands = new SpawnCommands(this, messages, spawns, teleports);
 
-        HomeCommands homeCommands = new HomeCommands(this, messages, homes, teleports, claims, economy, ranks);
+        HomeCommands homeCommands = new HomeCommands(this, messages, homes, teleports, claims, economy, ranks, publicHomes);
         WarpCommands warpCommands = new WarpCommands(this, messages, warps, teleports);
-        register(homeCommands, "home", "homes", "sethome", "delhome");
+        register(homeCommands, "home", "homes", "sethome", "delhome", "publichome", "phome", "phomes");
+        register(new BackCommand(this, messages, back, teleports), "back");
         register(warpCommands, "warp", "warps", "setwarp", "delwarp");
         register(spawnCommands, "spawn", "setspawn");
-        register(new DyHomesCommand(this, messages, playerData, homes, warps, spawns), "dyhomes");
+        register(new DyHomesCommand(this, messages, playerData, homes, warps, spawns, publicHomes), "dyhomes");
 
-        getServer().getPluginManager().registerEvents(new PlayerListener(this, teleports, homes, spawnCommands), this);
+        getServer().getPluginManager().registerEvents(new PlayerListener(this, teleports, homes, spawnCommands, back), this);
         startPlaceholders();
         startMetrics();
+        maps = new MapService(this);
+        // Map plugins may enable after DyHomes; start the markers once the server has finished loading.
+        scheduler.runGlobal(maps::start);
+        if (!publicHomes.loaded()) rebuildPublicHomes();
         updateChecker = new ModrinthUpdateChecker(this, messages);
         updateChecker.start();
         getLogger().info("DyHomes " + getDescription().getVersion() + " enabled" + (Scheduler.FOLIA ? " (Folia)." : "."));
@@ -94,6 +108,7 @@ public class DyHomes extends JavaPlugin {
     @Override
     public void onDisable() {
         if (teleports != null) teleports.cancelAll();
+        if (maps != null) maps.stop();
         if (updateChecker != null) updateChecker.cancel();
         stopPlaceholders();
         if (metrics != null) metrics.shutdown();
@@ -121,11 +136,13 @@ public class DyHomes extends JavaPlugin {
         homes.clearCache();
         warps.reload();
         spawns.reload();
+        publicHomes.reload();
         messages.reload();
         economy.reload();
         updateChecker.reload();
         stopPlaceholders();
         startPlaceholders();
+        maps.start();
         return true;
     }
 
@@ -168,6 +185,9 @@ public class DyHomes extends JavaPlugin {
     public MessageService messages() { return messages; }
     public RankRules ranks() { return ranks; }
     public TeleportService teleports() { return teleports; }
+    public PublicHomeIndex publicHomes() { return publicHomes; }
+    public BackService back() { return back; }
+    public MapService maps() { return maps; }
     public Location spawnLocation() { return spawnCommands == null ? null : spawnCommands.spawnLocation(); }
 
     /** PlaceholderAPI classes are only touched when that plugin is present and the switch is on. */
@@ -191,6 +211,21 @@ public class DyHomes extends JavaPlugin {
             // PlaceholderAPI is already gone.
         }
         placeholders = null;
+    }
+
+    /** Builds public-homes.yml from the homes files, for servers upgrading from a version without it. */
+    private void rebuildPublicHomes() {
+        scheduler.runAsync(() -> {
+            java.util.List<PublicHomeIndex.Entry> entries = new java.util.ArrayList<>();
+            for (java.util.UUID owner : homes.owners()) {
+                for (dev.dyhomes.model.Home home : homes.peek(owner)) {
+                    if (!home.publicHome()) continue;
+                    String name = getServer().getOfflinePlayer(owner).getName();
+                    entries.add(new PublicHomeIndex.Entry(owner, name == null ? owner.toString().substring(0, 8) : name, home.name()));
+                }
+            }
+            publicHomes.replace(entries);
+        });
     }
 
     private void startMetrics() {
@@ -219,14 +254,28 @@ public class DyHomes extends JavaPlugin {
             YamlConfiguration existing = new YamlConfiguration();
             existing.load(file);
             YamlConfiguration defaults = YamlConfiguration.loadConfiguration(new InputStreamReader(input, StandardCharsets.UTF_8));
-            if (copyMissing(defaults, existing)) existing.save(file);
+            YamlConfiguration stock = legacy(fileName);
+            if (copyMissing(defaults, existing, stock)) existing.save(file);
         } catch (Exception exception) {
             getLogger().warning("Could not add missing message keys to " + fileName + ": " + exception.getMessage());
         }
     }
 
-    /** Adds keys that are new in this version; texts the server owner already has are never changed. */
-    private static boolean copyMissing(ConfigurationSection defaults, ConfigurationSection target) {
+    /** The bundled 1.0.0-BETA text of a message file, used to recognise texts nobody edited. */
+    private YamlConfiguration legacy(String fileName) {
+        try (InputStream input = getResource("legacy/" + fileName.replace(".yml", "-1.0.0-BETA.yml"))) {
+            if (input == null) return new YamlConfiguration();
+            return YamlConfiguration.loadConfiguration(new InputStreamReader(input, StandardCharsets.UTF_8));
+        } catch (Exception exception) {
+            return new YamlConfiguration();
+        }
+    }
+
+    /**
+     * Adds keys that are new in this version. A text is only replaced when it is still exactly the stock text of
+     * 1.0.0-BETA (for example a help list that now has more commands); edited texts are never changed.
+     */
+    static boolean copyMissing(ConfigurationSection defaults, ConfigurationSection target, ConfigurationSection stock) {
         boolean changed = false;
         for (String key : defaults.getKeys(false)) {
             ConfigurationSection section = defaults.getConfigurationSection(key);
@@ -237,8 +286,14 @@ public class DyHomes extends JavaPlugin {
                     existing = target.createSection(key);
                     changed = true;
                 }
-                changed |= copyMissing(section, existing);
+                ConfigurationSection oldStock = stock == null ? null : stock.getConfigurationSection(key);
+                changed |= copyMissing(section, existing, oldStock);
             } else if (!target.contains(key)) {
+                target.set(key, defaults.get(key));
+                changed = true;
+            } else if (stock != null && stock.contains(key) && !(stock.get(key) instanceof ConfigurationSection)
+                    && java.util.Objects.equals(target.get(key), stock.get(key))
+                    && !java.util.Objects.equals(target.get(key), defaults.get(key))) {
                 target.set(key, defaults.get(key));
                 changed = true;
             }

@@ -6,7 +6,8 @@ import dev.dyhomes.economy.EconomyService;
 public enum TeleportKind {
     HOME("home", EconomyService.Action.HOME),
     WARP("warp", EconomyService.Action.WARP),
-    SPAWN("spawn", EconomyService.Action.SPAWN);
+    SPAWN("spawn", EconomyService.Action.SPAWN),
+    BACK("back", EconomyService.Action.BACK);
 
     private final String key;
     private final EconomyService.Action action;

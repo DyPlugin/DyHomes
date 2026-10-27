@@ -1,48 +1,30 @@
-# DyHomes 1.0.0-BETA
+# DyHomes 1.0.0
 
-The first public release of DyHomes: homes, warps and spawn in one light plugin for Bukkit, Spigot, Paper, Purpur and Folia, Minecraft 1.20.x through 26.x.
+The first stable release. It adds public homes, `/back`, importing from HuskHomes, warp markers on web maps and events for warps and public homes. Homes, warps, settings and translations from 1.0.0-BETA are kept.
 
 ## Added
 
-- **Homes.** `/home`, `/homes`, `/sethome` and `/delhome`.
-  - Named homes; without a name, `/sethome` sets `home` and `/home` goes to `home` or your only home.
-  - `/sethome` with an existing name moves that home instead of counting as a new one.
-  - Clickable home list.
-  - Administrators reach other players' homes with `player:home`, also for offline players.
-- **Limits per rank.** `homes.default-limit` (3), `dyhomes.limit.<n>` (the highest wins) and `dyhomes.limit.unlimited`. `homes.disabled-worlds` blocks new homes in chosen worlds.
-- **Warps.** `/warp`, `/warps`, `/setwarp` and `/delwarp`, with a clickable list. `warps.per-warp-permission` limits each warp to `dyhomes.warp.<name>`.
-- **Spawn.**
-  - `/spawn` and `/setspawn`.
-  - New players are sent to the spawn.
-  - Players without a bed or respawn anchor respawn there.
-  - Without `/setspawn`, `/spawn` uses the main world's spawn.
-- **Teleport flow.**
-  - Warmup (3 seconds), cancelled by moving, damage or another teleport.
-  - Cooldown and price per kind: home, warp, spawn; price also for `/sethome`.
-  - `dyhomes.cooldown.<seconds>` per rank (the lowest wins).
-  - The price is taken only right before the teleport and refunded if it fails.
-- **Destination safety.**
-  - Room to stand, no lava, fire or other hazard, and ground within `safety.max-fall` blocks.
-  - An unsafe destination is refused with a hint; adding `force` goes anyway.
-  - Slabs, carpets and water at the destination are handled.
-- **DyClaim.**
-  - With DyClaim 1.1.0 or later, homes in someone else's claim need its `build` right to set and its `teleport` right to use. Both rights are configurable.
-  - Losing trust keeps the home but blocks it.
-  - If DyClaim cannot answer, the action is refused.
-- **EssentialsX import.**
-  - `/dyhomes import essentials` copies homes (current and older file formats), warps and the spawn.
-  - Existing DyHomes entries are kept.
-  - EssentialsX files are only read.
-- **Languages.** English, Turkish, German, Spanish and Russian, from the client language or `/dyhomes language`. Turkish command aliases such as `/ev`, `/evler`, `/evayarla`, `/evsil`. MiniMessage tags on Paper, Purpur and Folia; text typed by players is never treated as tags.
-- **PlaceholderAPI.** `%dyhomes_count%`, `%dyhomes_limit%`, `%dyhomes_remaining%`, `%dyhomes_names%`, `%dyhomes_cooldown%`, `%dyhomes_cooldown_formatted%` and `%dyhomes_warps%`.
-- **Developer API.** `DyHomesAPI` plus the cancellable `HomeSetEvent`, `HomeDeleteEvent` and `DyHomesTeleportEvent`.
-- **Folia.** The same JAR runs on Folia with region and entity schedulers; Paper and Folia teleport asynchronously.
-- **Storage.**
-  - One small YAML file per player, written atomically.
-  - Unreadable files are never overwritten.
-  - Worlds are remembered by UID and name.
-- Modrinth update notices for administrators and optional anonymous bStats statistics.
+- **Public homes.**
+  - `/publichome <name>` (Turkish `/evpaylas`) opens a home to everyone or closes it again.
+  - `/phomes [player]` (`/acikevler`) lists public homes with clickable names, and `/phome <player:home>` (`/acikev`) visits one.
+  - Visiting follows the normal home teleport: warmup, cooldown, price and safety checks. The owner's DyClaim access applies, so a public home in a claim the owner can no longer use stays closed.
+  - Settings: `public-homes.enabled` and `public-homes.max-per-player` (3). `dyhomes.bypass.public-limit` removes the limit.
+- **/back** (`/geri`) returns to where you last teleported from or died.
+  - Settings: `back.enabled`, `on-teleport`, `on-death` and `disabled-worlds`.
+  - It has its own `cooldown.back` and `economy.prices.back`.
+  - Positions are kept in memory until the player leaves.
+- **HuskHomes import.** `/dyhomes import huskhomes` copies homes, public homes and warps from a HuskHomes SQLite database, including custom table names. Existing DyHomes entries are kept, and HuskHomes data is only read.
+- **Web maps.** Warps appear as markers on BlueMap, Dynmap and squaremap when one of them is installed. `maps.public-homes` adds public homes. Dynmap and squaremap are not used on Folia.
+- **Developer API.** `WarpChangeEvent`, `HomePublicChangeEvent` and `DyHomesAPI.getPublicHomes()`. DyDiscord 1.2.0 can post these events to a log channel.
 
-## License
+## Fixed
 
-DyHomes is released under the DyHomes Source-Available License 1.0, the same terms as DyClaim, DyRTP and DyDiscord.
+- An administrator's look at an offline player's homes no longer keeps those homes in memory.
+- Clickable lists fall back to plain text on CraftBukkit servers without chat components.
+- Help and import texts that were never edited are replaced with the new wording after an upgrade from 1.0.0-BETA. Edited texts are kept.
+
+## Upgrading
+
+Stop the server, replace `DyHomes-1.0.0-BETA.jar` with `DyHomes-1.0.0.jar` and start it again. New settings and messages are added; nothing you changed is replaced.
+
+Full changelog: https://dynastyplugins.com/dyhomes/versions/1.0.0

@@ -15,6 +15,8 @@ commands:
   home: "/home"
   warp: "/warp"
   spawn: "/spawn"
+  back: "/back"
+  phome: "/phome"
 general:
   no-permission: "{prefix} &cNo tienes permiso para hacer eso."
   player-only: "{prefix} &cEste comando solo se puede usar dentro del juego."
@@ -34,6 +36,10 @@ help:
     - "&6/delhome <nombre> &7- Borrar una casa"
     - "&6/warp [nombre] &7- Ir a un warp o ver la lista"
     - "&6/spawn &7- Teletransportarte al spawn"
+    - "&6/back &7- Volver a donde te teletransportaste o moriste por última vez"
+    - "&6/publichome <nombre> &7- Abrir una casa a todos o cerrarla"
+    - "&6/phome <jugador:casa> &7- Visitar una casa pública"
+    - "&6/phomes &7- Ver las casas públicas"
     - "&6/dyhomes language <auto|en|tr|de|es|ru> &7- Cambiar tu idioma"
   admin:
     - "&8&m----------&r &6DyHomes &fAdmin &8&m----------"
@@ -43,11 +49,12 @@ help:
     - "&6/homes <jugador> &7- Ver las casas de un jugador"
     - "&6/home <jugador>:<nombre> &7- Visitar la casa de un jugador"
     - "&6/delhome <jugador>:<nombre> &7- Borrar la casa de un jugador"
-    - "&6/dyhomes import essentials &7- Copiar casas, warps y spawn de EssentialsX"
+    - "&6/dyhomes import <essentials|huskhomes> &7- Copiar casas, warps y spawn de EssentialsX o HuskHomes"
     - "&6/dyhomes reload &7- Recargar ajustes y mensajes"
 list:
   names: "&7{names}"
   name: "&f{name}"
+  name-public: "&a{name}"
   separator: "&7, "
   hover: "&7Clic: &f{command}"
 homes:
@@ -97,17 +104,37 @@ teleport:
   success-home: "{prefix} &aBienvenido a casa, &f{name}&a."
   success-warp: "{prefix} &aTeletransportado al warp &f{name}&a."
   success-spawn: "{prefix} &aTeletransportado al spawn."
+  success-back: "{prefix} &aHas vuelto."
   charged: "{prefix} &7Se han cobrado &f{cost}&7."
 time:
   hours: "{hours} h {minutes} min"
   minutes: "{minutes} min {seconds} s"
   seconds: "{seconds} s"
 import:
-  usage: "{prefix} &cUsa &f/dyhomes import essentials&c."
+  usage: "{prefix} &cUsa &f/dyhomes import <essentials|huskhomes>&c."
+  husk-not-found: "{prefix} &cNo se encontró una carpeta plugins/HuskHomes con base de datos."
+  husk-database: "{prefix} &cHuskHomes usa una base de datos &f{type}&c. Solo se puede importar su base de datos SQLite predeterminada."
   not-found: "{prefix} &cNo se encontró la carpeta plugins/Essentials."
   running: "{prefix} &cYa hay una importación en curso."
   started: "{prefix} &7Leyendo los datos de EssentialsX..."
   done: "{prefix} &aImportación terminada: &f{homes} &acasas, &f{warps} &awarps, spawn: &f{spawn}&a. &7Ya estaban en DyHomes y se conservan: &f{kept}&7. Omitidos: &f{skipped}&7."
   failed: "{prefix} &cLa importación se detuvo con un error; revisa la consola. No se cambió nada que ya estuviera en DyHomes."
+back:
+  disabled: "{prefix} &c/back está desactivado en este servidor."
+  none: "{prefix} &cAún no hay ningún lugar al que volver."
+public:
+  disabled: "{prefix} &cLas casas públicas están desactivadas en este servidor."
+  usage: "{prefix} &cUsa &f/publichome <nombre>&c."
+  limit: "{prefix} &cPuedes tener como máximo &f{limit}&c casas públicas."
+  opened: "{prefix} &aLa casa &f{name} &aahora es pública. Otros pueden visitarla con &f/phome&a."
+  closed: "{prefix} &aLa casa &f{name} &avuelve a ser privada."
+  not-found: "{prefix} &cNinguna casa pública coincide con &f{name}&c."
+  choose: "{prefix} &7Varias casas públicas coinciden con &f{name}&7; elige una:"
+  list: "{prefix} &7Casas públicas &8({count})&7:"
+  none: "{prefix} &7Aún no hay casas públicas."
+map:
+  layer: "Warps"
+  warp: "Warp: {name}"
+  home: "Casa de {player}: {name}"
 updates:
   available: "{prefix} &aHay una nueva versión de DyHomes: &f{latest} &7(actual: &f{current}&7) &e{url}"

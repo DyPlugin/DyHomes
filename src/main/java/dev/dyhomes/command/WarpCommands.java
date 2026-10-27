@@ -105,6 +105,8 @@ public class WarpCommands implements CommandExecutor, TabCompleter {
             messages.send(sender, "homes.save-failed");
             return;
         }
+        plugin.getServer().getPluginManager().callEvent(new dev.dyhomes.api.event.WarpChangeEvent(sender, warp, previous == null, false));
+        plugin.maps().refresh();
         messages.send(sender, previous == null ? "warps.set" : "warps.moved", Map.of("{name}", warp.name()));
     }
 
@@ -126,7 +128,11 @@ public class WarpCommands implements CommandExecutor, TabCompleter {
             return;
         }
         if (removed == null) messages.send(sender, "warps.not-found", Map.of("{name}", args[0]));
-        else messages.send(sender, "warps.deleted", Map.of("{name}", removed.name()));
+        else {
+            plugin.getServer().getPluginManager().callEvent(new dev.dyhomes.api.event.WarpChangeEvent(sender, removed, false, true));
+            plugin.maps().refresh();
+            messages.send(sender, "warps.deleted", Map.of("{name}", removed.name()));
+        }
     }
 
     private boolean canUse(CommandSender sender, Warp warp) {

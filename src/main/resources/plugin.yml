@@ -3,7 +3,7 @@ version: ${version}
 main: dev.dyhomes.DyHomes
 api-version: '1.20'
 folia-supported: true
-description: Homes, warps and spawn in one light plugin, with DyClaim support and English, Turkish, German, Spanish and Russian messages.
+description: Homes, public homes, /back, warps and spawn in one light plugin, with DyClaim support and English, Turkish, German, Spanish and Russian messages.
 author: Claww
 website: https://github.com/DyPlugin/DyHomes
 softdepend:
@@ -28,6 +28,22 @@ commands:
     description: Delete one of your homes
     usage: /<command> <name>
     aliases: [evsil, deletehome, remhome]
+  publichome:
+    description: Open one of your homes to everyone, or close it again
+    usage: /<command> <name>
+    aliases: [evpaylas, sharehome]
+  phome:
+    description: Visit a public home
+    usage: /<command> <player:home>
+    aliases: [acikev]
+  phomes:
+    description: List public homes
+    usage: /<command> [player]
+    aliases: [acikevler]
+  back:
+    description: Return to where you last teleported from or died
+    usage: /<command>
+    aliases: [geri]
   warp:
     description: Teleport to a warp
     usage: /<command> [name]
@@ -62,6 +78,18 @@ permissions:
   dyhomes.sethome:
     description: Use /sethome and /delhome for your own homes.
     default: true
+  dyhomes.back:
+    description: Use /back.
+    default: true
+  dyhomes.publichome:
+    description: Open your own homes to everyone with /publichome.
+    default: true
+  dyhomes.phome:
+    description: Visit and list public homes.
+    default: true
+  dyhomes.bypass.public-limit:
+    description: Open any number of homes to everyone.
+    default: op
   dyhomes.warp:
     description: Use /warp and /warps.
     default: true

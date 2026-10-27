@@ -15,6 +15,8 @@ commands:
   home: "/ev"
   warp: "/warp"
   spawn: "/spawn"
+  back: "/geri"
+  phome: "/acikev"
 general:
   no-permission: "{prefix} &cBu işlem için yetkin yok."
   player-only: "{prefix} &cBu komut yalnızca oyun içinden kullanılabilir."
@@ -34,6 +36,10 @@ help:
     - "&6/evsil <ad> &7- Bir evi sil"
     - "&6/warp [ad] &7- Bir warpa ışınlan ya da warpları listele"
     - "&6/spawn &7- Spawna ışınlan"
+    - "&6/geri &7- Son ışınlandığın ya da öldüğün yere dön"
+    - "&6/evpaylas <ad> &7- Bir evini herkese aç ya da kapat"
+    - "&6/acikev <oyuncu:ev> &7- Herkese açık bir eve git"
+    - "&6/acikevler &7- Herkese açık evleri listele"
     - "&6/dyhomes dil <oto|en|tr|de|es|ru> &7- Dilini değiştir"
   admin:
     - "&8&m----------&r &6DyHomes &fYönetim &8&m----------"
@@ -43,11 +49,12 @@ help:
     - "&6/evler <oyuncu> &7- Bir oyuncunun evlerini listele"
     - "&6/ev <oyuncu>:<ad> &7- Bir oyuncunun evine git"
     - "&6/evsil <oyuncu>:<ad> &7- Bir oyuncunun evini sil"
-    - "&6/dyhomes aktar essentials &7- EssentialsX'ten ev, warp ve spawn aktar"
+    - "&6/dyhomes aktar <essentials|huskhomes> &7- EssentialsX ya da HuskHomes'tan ev, warp ve spawn aktar"
     - "&6/dyhomes yenile &7- Ayarları ve mesajları yenile"
 list:
   names: "&7{names}"
   name: "&f{name}"
+  name-public: "&a{name}"
   separator: "&7, "
   hover: "&7Tıkla: &f{command}"
 homes:
@@ -97,17 +104,37 @@ teleport:
   success-home: "{prefix} &f{name} &aevine hoş geldin."
   success-warp: "{prefix} &f{name} &awarpına ışınlandın."
   success-spawn: "{prefix} &aSpawna ışınlandın."
+  success-back: "{prefix} &aGeri döndün."
   charged: "{prefix} &f{cost} &7ücret alındı."
 time:
   hours: "{hours} sa {minutes} dk"
   minutes: "{minutes} dk {seconds} sn"
   seconds: "{seconds} sn"
 import:
-  usage: "{prefix} &f/dyhomes aktar essentials &ckullan."
+  usage: "{prefix} &f/dyhomes aktar <essentials|huskhomes> &ckullan."
+  husk-not-found: "{prefix} &cVeritabanı olan bir plugins/HuskHomes klasörü bulunamadı."
+  husk-database: "{prefix} &cHuskHomes &f{type}&c veritabanı kullanıyor. Yalnızca varsayılan SQLite veritabanı aktarılabilir."
   not-found: "{prefix} &cplugins/Essentials klasörü bulunamadı."
   running: "{prefix} &cZaten bir aktarım sürüyor."
   started: "{prefix} &7EssentialsX verileri okunuyor..."
   done: "{prefix} &aAktarım bitti: &f{homes} &aev, &f{warps} &awarp, spawn: &f{spawn}&a. &7DyHomes'ta zaten olduğu için korunan: &f{kept}&7. Atlanan: &f{skipped}&7."
   failed: "{prefix} &cAktarım bir hatayla durdu; konsolu kontrol et. DyHomes'ta zaten olan hiçbir şey değişmedi."
+back:
+  disabled: "{prefix} &c/geri bu sunucuda kapalı."
+  none: "{prefix} &cHenüz dönebileceğin bir yer yok."
+public:
+  disabled: "{prefix} &cHerkese açık evler bu sunucuda kapalı."
+  usage: "{prefix} &f/evpaylas <ad> &ckullan."
+  limit: "{prefix} &cEn fazla &f{limit}&c evini herkese açabilirsin."
+  opened: "{prefix} &f{name} &aevi artık herkese açık. Başkaları &f/acikev &aile gidebilir."
+  closed: "{prefix} &f{name} &aevi yeniden yalnızca senin."
+  not-found: "{prefix} &f{name} &cile eşleşen herkese açık bir ev yok."
+  choose: "{prefix} &f{name} &7ile eşleşen birkaç herkese açık ev var; birini seç:"
+  list: "{prefix} &7Herkese açık evler &8({count})&7:"
+  none: "{prefix} &7Henüz herkese açık ev yok."
+map:
+  layer: "Warplar"
+  warp: "Warp: {name}"
+  home: "{player} adlı oyuncunun evi: {name}"
 updates:
   available: "{prefix} &aYeni bir DyHomes sürümü var: &f{latest} &7(şu anki: &f{current}&7) &e{url}"

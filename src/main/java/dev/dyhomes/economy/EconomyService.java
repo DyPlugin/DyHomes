@@ -14,7 +14,7 @@ import java.util.Locale;
  */
 public class EconomyService {
     /** Actions that can have a price, matching the keys under economy.prices. */
-    public enum Action { HOME, WARP, SPAWN, SETHOME }
+    public enum Action { HOME, WARP, SPAWN, SETHOME, BACK }
 
     private final DyHomes plugin;
     private volatile Economy economy;

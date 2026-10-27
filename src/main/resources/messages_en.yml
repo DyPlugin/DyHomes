@@ -15,6 +15,8 @@ commands:
   home: "/home"
   warp: "/warp"
   spawn: "/spawn"
+  back: "/back"
+  phome: "/phome"
 general:
   no-permission: "{prefix} &cYou do not have permission to do that."
   player-only: "{prefix} &cThis command can only be used in-game."
@@ -34,6 +36,10 @@ help:
     - "&6/delhome <name> &7- Delete a home"
     - "&6/warp [name] &7- Teleport to a warp or list them"
     - "&6/spawn &7- Teleport to the spawn"
+    - "&6/back &7- Return to where you last teleported from or died"
+    - "&6/publichome <name> &7- Open a home to everyone, or close it"
+    - "&6/phome <player:home> &7- Visit a public home"
+    - "&6/phomes &7- List public homes"
     - "&6/dyhomes language <auto|en|tr|de|es|ru> &7- Change your language"
   admin:
     - "&8&m----------&r &6DyHomes &fAdmin &8&m----------"
@@ -43,11 +49,12 @@ help:
     - "&6/homes <player> &7- List a player's homes"
     - "&6/home <player>:<name> &7- Visit a player's home"
     - "&6/delhome <player>:<name> &7- Delete a player's home"
-    - "&6/dyhomes import essentials &7- Copy homes, warps and spawn from EssentialsX"
+    - "&6/dyhomes import <essentials|huskhomes> &7- Copy homes, warps and spawn from EssentialsX or HuskHomes"
     - "&6/dyhomes reload &7- Reload settings and messages"
 list:
   names: "&7{names}"
   name: "&f{name}"
+  name-public: "&a{name}"
   separator: "&7, "
   hover: "&7Click: &f{command}"
 homes:
@@ -97,17 +104,37 @@ teleport:
   success-home: "{prefix} &aWelcome home to &f{name}&a."
   success-warp: "{prefix} &aTeleported to warp &f{name}&a."
   success-spawn: "{prefix} &aTeleported to the spawn."
+  success-back: "{prefix} &aYou went back."
   charged: "{prefix} &f{cost} &7has been charged."
 time:
   hours: "{hours}h {minutes}m"
   minutes: "{minutes}m {seconds}s"
   seconds: "{seconds}s"
 import:
-  usage: "{prefix} &cUse &f/dyhomes import essentials&c."
+  usage: "{prefix} &cUse &f/dyhomes import <essentials|huskhomes>&c."
+  husk-not-found: "{prefix} &cNo plugins/HuskHomes folder with a database was found."
+  husk-database: "{prefix} &cHuskHomes uses a &f{type}&c database. Only its default SQLite database can be imported."
   not-found: "{prefix} &cNo plugins/Essentials folder was found."
   running: "{prefix} &cAn import is already running."
   started: "{prefix} &7Reading EssentialsX data..."
   done: "{prefix} &aImport finished: &f{homes} &ahomes, &f{warps} &awarps, spawn: &f{spawn}&a. &7Already in DyHomes and kept: &f{kept}&7. Skipped: &f{skipped}&7."
   failed: "{prefix} &cThe import stopped with an error; check the console. Nothing already in DyHomes was changed."
+back:
+  disabled: "{prefix} &c/back is turned off on this server."
+  none: "{prefix} &cThere is nowhere to go back to yet."
+public:
+  disabled: "{prefix} &cPublic homes are turned off on this server."
+  usage: "{prefix} &cUse &f/publichome <name>&c."
+  limit: "{prefix} &cYou can have at most &f{limit}&c public homes."
+  opened: "{prefix} &aHome &f{name} &ais now public. Others can visit it with &f/phome&a."
+  closed: "{prefix} &aHome &f{name} &ais private again."
+  not-found: "{prefix} &cNo public home matches &f{name}&c."
+  choose: "{prefix} &7Several public homes match &f{name}&7; choose one:"
+  list: "{prefix} &7Public homes &8({count})&7:"
+  none: "{prefix} &7There are no public homes yet."
+map:
+  layer: "Warps"
+  warp: "Warp: {name}"
+  home: "{player}'s home: {name}"
 updates:
   available: "{prefix} &aA new DyHomes version is available: &f{latest} &7(current: &f{current}&7) &e{url}"

@@ -10,6 +10,7 @@ import dev.dyhomes.model.SavedLocation;
 import dev.dyhomes.model.Warp;
 import dev.dyhomes.rank.RankRules;
 import dev.dyhomes.storage.HomeStore;
+import dev.dyhomes.storage.PublicHomeIndex;
 import dev.dyhomes.storage.WarpStore;
 import dev.dyhomes.teleport.TeleportKind;
 import dev.dyhomes.teleport.TeleportService;
@@ -44,6 +45,7 @@ class HomeCommandsTest {
     private final Player player = mock(Player.class);
     private final World world = mock(World.class);
     private HomeStore homes;
+    private PublicHomeIndex publicIndex;
     private HomeCommands commands;
     private org.mockito.MockedStatic<org.bukkit.Bukkit> bukkit;
 
@@ -57,6 +59,7 @@ class HomeCommandsTest {
         bukkit.when(() -> org.bukkit.Bukkit.getWorld(anyString())).thenReturn(world);
         Server server = mock(Server.class);
         when(plugin.getConfig()).thenReturn(config);
+        when(plugin.maps()).thenReturn(mock(dev.dyhomes.map.MapService.class));
         when(plugin.getServer()).thenReturn(server);
         when(plugin.getLogger()).thenReturn(Logger.getLogger("test"));
         when(server.getPluginManager()).thenReturn(plugins);
@@ -71,6 +74,7 @@ class HomeCommandsTest {
                 && !((String) call.getArgument(0)).startsWith("dyhomes.limit") && !((String) call.getArgument(0)).startsWith("dyhomes.bypass"));
         when(messages.get(any(), anyString())).thenAnswer(call -> switch ((String) call.getArgument(1)) {
             case "commands.home" -> "/home";
+            case "commands.phome" -> "/phome";
             case "words.force" -> "force";
             default -> "";
         });
@@ -79,7 +83,8 @@ class HomeCommandsTest {
         when(economy.withdraw(any(), anyDouble())).thenReturn(mock(EconomyService.Withdrawal.class));
         config.set("homes.default-limit", 2);
         homes = new HomeStore(folder, Logger.getLogger("test"));
-        commands = new HomeCommands(plugin, messages, homes, teleports, claims, economy, new RankRules(() -> config));
+        publicIndex = new PublicHomeIndex(folder, Logger.getLogger("test"));
+        commands = new HomeCommands(plugin, messages, homes, teleports, claims, economy, new RankRules(() -> config), publicIndex);
     }
 
     private void run(String name, String... args) {
@@ -142,6 +147,44 @@ class HomeCommandsTest {
         run("delhome", "BASE");
         assertEquals(0, homes.count(player.getUniqueId()));
         verify(messages).send(eq(player), eq("homes.deleted"), anyMap());
+    }
+
+    @Test void movingAPublicHomeKeepsItPublic() throws Exception {
+        run("sethome", "shop");
+        run("publichome", "shop");
+        assertTrue(homes.home(player.getUniqueId(), "shop").orElseThrow().publicHome());
+        assertEquals(1, publicIndex.entries().size());
+        run("sethome", "shop");
+        assertTrue(homes.home(player.getUniqueId(), "shop").orElseThrow().publicHome(), "moving keeps the public flag");
+        run("publichome", "shop");
+        assertFalse(homes.home(player.getUniqueId(), "shop").orElseThrow().publicHome());
+        assertTrue(publicIndex.entries().isEmpty());
+    }
+
+    @Test void publicHomesRespectTheLimitAndAreRemovedWithTheHome() throws Exception {
+        config.set("public-homes.max-per-player", 1);
+        run("sethome", "one");
+        run("sethome", "two");
+        run("publichome", "one");
+        run("publichome", "two");
+        verify(messages).send(eq(player), eq("public.limit"), anyMap());
+        run("delhome", "one");
+        assertTrue(publicIndex.entries().isEmpty(), "deleting a public home removes it from the list");
+    }
+
+    @Test void visitingAPublicHomeChecksTheOwnersClaimAccess() throws Exception {
+        UUID owner = UUID.randomUUID();
+        Home shop = new Home(owner, "Shop", SavedLocation.of(new Location(world, 9, 64, 9)), 1L, true);
+        homes.put(shop);
+        publicIndex.update(shop, "Steve", true);
+        run("phome", "steve:shop");
+        verify(teleports).request(eq(player), eq(TeleportKind.HOME), eq("Steve:Shop"), any(), eq("/phome Steve:Shop force"), eq(false), eq(owner));
+        run("phome", "shop");
+        verify(teleports, times(2)).request(eq(player), eq(TeleportKind.HOME), eq("Steve:Shop"), any(), anyString(), eq(false), eq(owner));
+        homes.put(shop.withPublic(false));
+        run("phome", "steve:shop");
+        verify(messages).send(eq(player), eq("public.not-found"), anyMap());
+        assertTrue(publicIndex.entries().isEmpty(), "a home closed behind the list is dropped from it");
     }
 
     @Test void perWarpPermissionHidesWarps() throws Exception {

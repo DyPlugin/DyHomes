@@ -6,7 +6,7 @@
 
 DyHomes is a command-based homes plugin for survival, SMP and economy servers. Players set homes and return to them, server owners create warps and a spawn, and everything stays light: no GUI, no database server, one JAR for every server build.
 
-DyHomes combines named homes with rank limits, warps, spawn handling, destination safety checks, DyClaim trust support and optional prices with a familiar command-based workflow. **Version 1.0.0-BETA** is the first public release.
+DyHomes combines named homes with rank limits, public homes, /back, warps, spawn handling, destination safety checks, DyClaim trust support, web-map markers and optional prices with a familiar command-based workflow. **Version 1.0.0** is the first stable release. It adds public homes, `/back`, importing from HuskHomes and warp markers on BlueMap, Dynmap and squaremap.
 
 ---
 
@@ -20,7 +20,13 @@ DyHomes combines named homes with rank limits, warps, spawn handling, destinatio
 
 **One JAR for every server.** Bukkit, Spigot, Paper, Purpur and Folia. On Folia, homes in other regions are checked and reached on the right region thread; on Paper and Folia teleports are asynchronous.
 
-**Easy switch from EssentialsX.** `/dyhomes import essentials` copies homes, warps and the spawn. Nothing already in DyHomes is replaced, and EssentialsX files are only read.
+**Share a home.** `/publichome <name>` opens a home to everyone; others find it with `/phomes` and visit it with `/phome <player:home>`. The owner's DyClaim trust still applies, so a public home inside someone else's claim stays closed if the owner loses access.
+
+**Never lost.** `/back` returns to where you last teleported from or died, with its own cooldown and price.
+
+**Easy switch.** `/dyhomes import essentials` copies homes, warps and the spawn from EssentialsX, and `/dyhomes import huskhomes` copies homes (including public ones) and warps from a HuskHomes SQLite database. Nothing already in DyHomes is replaced, and the other plugin's files are only read.
+
+**On your web map.** Warps, and optionally public homes, appear as markers on BlueMap, Dynmap and squaremap when one is installed.
 
 **Five languages.** English, Turkish, German, Spanish and Russian, picked from the player's Minecraft language or their own choice. Turkish players also get Turkish commands such as `/ev`, `/evler` and `/evayarla`. Messages accept `&` colour codes everywhere and MiniMessage tags on Paper, Purpur and Folia.
 
@@ -30,11 +36,11 @@ DyHomes combines named homes with rank limits, warps, spawn handling, destinatio
 
 | Server | JAR |
 | --- | --- |
-| Bukkit, Spigot, Paper, Purpur, Folia | `DyHomes-1.0.0-BETA.jar` |
+| Bukkit, Spigot, Paper, Purpur, Folia | `DyHomes-1.0.0.jar` |
 
 Java 17 bytecode; use the Java runtime your server needs. Release listing: Minecraft 1.20.x through 26.x. The live checks for this release used Purpur 1.20.4, Folia 1.20.4, Paper 26.2 and Spigot 26.3; see the [verification record](docs/verification.md).
 
-[Downloads](https://github.com/DyPlugin/DyHomes/releases/tag/1.0.0-BETA) · [Changelog](CHANGELOG.md)
+[Downloads](https://github.com/DyPlugin/DyHomes/releases/tag/1.0.0) · [Changelog](CHANGELOG.md)
 
 ## Commands
 
@@ -48,6 +54,10 @@ Java 17 bytecode; use the Java runtime your server needs. Release listing: Minec
 | `/warp [name]` | `/warp` | Teleport to a warp; without a name, list the warps |
 | `/warps` | `/warplar` | List the warps |
 | `/spawn` | `/spawn` | Teleport to the spawn |
+| `/back` | `/geri` | Return to where you last teleported from or died |
+| `/publichome <name>` | `/evpaylas` | Open one of your homes to everyone, or close it again |
+| `/phome <player:home>` | `/acikev` | Visit a public home |
+| `/phomes [player]` | `/acikevler` | List public homes; names are clickable |
 | `/dyhomes language <auto/en/tr/de/es/ru>` | `/dyhomes dil` | Save your language |
 | `/setwarp <name>` | `/warpayarla` | Create or move a warp |
 | `/delwarp <name>` | `/warpsil` | Delete a warp |
@@ -56,6 +66,7 @@ Java 17 bytecode; use the Java runtime your server needs. Release listing: Minec
 | `/home <player>:<name>` | `/ev <oyuncu>:<ad>` | Visit another player's home |
 | `/delhome <player>:<name>` | `/evsil <oyuncu>:<ad>` | Delete another player's home |
 | `/dyhomes import essentials` | `/dyhomes aktar essentials` | Copy homes, warps and spawn from EssentialsX |
+| `/dyhomes import huskhomes` | `/dyhomes aktar huskhomes` | Copy homes and warps from HuskHomes (SQLite) |
 | `/dyhomes reload` | `/dyhomes yenile` | Validate and reload settings and messages |
 
 `/dyh` is short for `/dyhomes`, `/h` for `/home`. Home and warp names use letters of any alphabet, digits, `_` and `-`, up to 32 characters, and ignore case. With EssentialsX installed, plain `/home`, `/homes` and the other commands still reach DyHomes; `/dyhomes:home` always does.
@@ -69,6 +80,10 @@ Java 17 bytecode; use the Java runtime your server needs. Release listing: Minec
 | `dyhomes.warp` | true | `/warp`, `/warps` |
 | `dyhomes.warp.<name>` | not set | One warp, when `warps.per-warp-permission` is on |
 | `dyhomes.spawn` | true | `/spawn` |
+| `dyhomes.back` | true | `/back` |
+| `dyhomes.publichome` | true | `/publichome` for your own homes |
+| `dyhomes.phome` | true | `/phome`, `/phomes` |
+| `dyhomes.bypass.public-limit` | op | Open any number of homes to everyone |
 | `dyhomes.setwarp`, `dyhomes.delwarp` | op | Manage warps |
 | `dyhomes.setspawn` | op | Set the spawn |
 | `dyhomes.admin` | op | Reload, import, server language, update notices |
@@ -82,7 +97,11 @@ Java 17 bytecode; use the Java runtime your server needs. Release listing: Minec
 
 ## Teleports
 
-Every home, warp and spawn teleport follows the same steps: cooldown, price check, DyClaim access (homes), destination safety, the cancellable `DyHomesTeleportEvent`, then a warmup of `warmup.seconds` (3 by default). Moving, taking damage or being teleported by something else cancels the warmup. The price is taken right before the teleport and refunded if it fails; the cooldown only starts after a successful teleport. Cooldowns and prices are set per kind: `cooldown.home`, `cooldown.warp`, `cooldown.spawn` and `economy.prices.home`, `.warp`, `.spawn`, `.sethome`.
+Every home, warp and spawn teleport follows the same steps: cooldown, price check, DyClaim access (homes), destination safety, the cancellable `DyHomesTeleportEvent`, then a warmup of `warmup.seconds` (3 by default). Moving, taking damage or being teleported by something else cancels the warmup. The price is taken right before the teleport and refunded if it fails; the cooldown only starts after a successful teleport. Cooldowns and prices are set per kind: `cooldown.home`, `cooldown.warp`, `cooldown.spawn`, `cooldown.back` and `economy.prices.home`, `.warp`, `.spawn`, `.back`, `.sethome`. Visiting a public home counts as a home teleport.
+
+`/back` remembers the last place a player teleported from and where they died (`back.on-teleport`, `back.on-death`), skipping moves under four blocks and worlds in `back.disabled-worlds`. Positions are kept until the player leaves.
+
+Public homes: `public-homes.enabled` and `public-homes.max-per-player` (3).
 
 Spawn: `/setspawn` stores the spawn and, with `spawn.set-world-spawn`, also moves the vanilla world spawn. New players go to it (`spawn.on-first-join`), and players without a bed or respawn anchor respawn there (`spawn.on-respawn`). Without `/setspawn`, `/spawn` uses the main world's spawn.
 
@@ -92,7 +111,7 @@ With PlaceholderAPI: `%dyhomes_count%`, `%dyhomes_limit%`, `%dyhomes_remaining%`
 
 ## For developers
 
-`dev.dyhomes.api.DyHomesAPI` reads homes (also of offline players), warps, the spawn and a player's limit. `HomeSetEvent` and `HomeDeleteEvent` are cancellable and fire before a change; `DyHomesTeleportEvent` is cancellable and fires before the warmup. Add `softdepend: [DyHomes]` and check `DyHomesAPI.isAvailable()` first.
+`dev.dyhomes.api.DyHomesAPI` reads homes (also of offline players), warps, the spawn and a player's limit. `HomeSetEvent` and `HomeDeleteEvent` are cancellable and fire before a change; `DyHomesTeleportEvent` is cancellable and fires before the warmup. `WarpChangeEvent` and `HomePublicChangeEvent` report warps that were created, moved or deleted and homes that were opened or closed. `getPublicHomes()` lists public homes. Add `softdepend: [DyHomes]` and check `DyHomesAPI.isAvailable()` first.
 
 ## Data and upgrades
 
@@ -106,7 +125,7 @@ Missing settings and message keys are added on start and reload without touching
 gradle clean build
 ```
 
-Gradle 9.1 with Java 21 or 25. The JAR is `build/libs/DyHomes-1.0.0-BETA.jar`. Tests use JUnit and Mockito and are not part of the JAR.
+Gradle 9.1 with Java 21 or 25. The JAR is `build/libs/DyHomes-1.0.0.jar`. Tests use JUnit and Mockito and are not part of the JAR.
 
 ## License
 
@@ -114,9 +133,9 @@ DyHomes Source-Available License 1.0, the same terms as DyClaim, DyRTP and DyDis
 
 ## Get started
 
-1. Put `DyHomes-1.0.0-BETA.jar` in `plugins/` and start the server.
+1. Put `DyHomes-1.0.0.jar` in `plugins/` and start the server.
 2. Stand where players should arrive and run `/setspawn`; create warps with `/setwarp <name>`.
-3. Coming from EssentialsX? Run `/dyhomes import essentials` once.
+3. Coming from EssentialsX or HuskHomes? Run `/dyhomes import essentials` or `/dyhomes import huskhomes` once.
 4. Adjust `config.yml` (limits, warmup, cooldowns, prices) and run `/dyhomes reload`.
 
 ## Source and support

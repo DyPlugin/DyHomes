@@ -23,18 +23,24 @@ public final class DyHomesAPI {
         return plugin != null && plugin.isEnabled() && plugin.homeStore() != null;
     }
 
-    /** A player's homes, sorted by name. Works for offline players too. */
+    /** A player's homes, sorted by name. Works for offline players too without keeping their homes in memory. */
     public static List<Home> getHomes(UUID player) {
-        return plugin().homeStore().homes(player);
+        return plugin().homeStore().peek(player);
     }
 
     public static Optional<Home> getHome(UUID player, String name) {
-        return plugin().homeStore().home(player, name);
+        String key = dev.dyhomes.model.Names.key(name);
+        return plugin().homeStore().peek(player).stream().filter(home -> home.key().equals(key)).findFirst();
     }
 
     /** The player's home limit including dyhomes.limit.&lt;n&gt; permissions; Integer.MAX_VALUE when unlimited. */
     public static int getHomeLimit(Player player) {
         return plugin().ranks().homeLimit(player);
+    }
+
+    /** Every public home as owner, owner name and home name; read the home itself with {@link #getHome}. */
+    public static List<dev.dyhomes.storage.PublicHomeIndex.Entry> getPublicHomes() {
+        return plugin().publicHomes().entries();
     }
 
     public static List<Warp> getWarps() {

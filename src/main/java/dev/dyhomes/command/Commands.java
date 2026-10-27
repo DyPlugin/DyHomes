@@ -58,6 +58,12 @@ final class Commands {
      */
     static void sendNames(CommandSender sender, MessageService messages, String header, Map<String, String> values,
                           List<String> names, String command) {
+        sendNames(sender, messages, header, values, names, command, List.of());
+    }
+
+    /** As above; names in {@code highlighted} (public homes) use the list.name-public format. */
+    static void sendNames(CommandSender sender, MessageService messages, String header, Map<String, String> values,
+                          List<String> names, String command, List<String> highlighted) {
         messages.send(sender, header, values);
         if (!(sender instanceof Player player)) {
             sender.sendMessage(messages.get(sender, "list.names", Map.of("{names}", String.join(", ", names))));
@@ -70,12 +76,18 @@ final class Commands {
         for (int i = 0; i < names.size(); i++) {
             if (i > 0) for (BaseComponent part : TextComponent.fromLegacyText(separator)) parts.add(part);
             String name = names.get(i);
-            for (BaseComponent part : TextComponent.fromLegacyText(messages.get(sender, "list.name", Map.of("{name}", name)))) {
+            String format = highlighted.contains(name) ? "list.name-public" : "list.name";
+            for (BaseComponent part : TextComponent.fromLegacyText(messages.get(sender, format, Map.of("{name}", name)))) {
                 part.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, command + name));
                 part.setHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(hover.replace("{command}", command + name))));
                 parts.add(part);
             }
         }
-        player.spigot().sendMessage(parts.toArray(new BaseComponent[0]));
+        try {
+            player.spigot().sendMessage(parts.toArray(new BaseComponent[0]));
+        } catch (UnsupportedOperationException | LinkageError noChatComponents) {
+            // CraftBukkit without Spigot has no chat components; the list is sent as plain text instead.
+            player.sendMessage(messages.get(sender, "list.names", Map.of("{names}", String.join(", ", names))));
+        }
     }
 }

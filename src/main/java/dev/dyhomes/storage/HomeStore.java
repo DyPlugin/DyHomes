@@ -43,6 +43,16 @@ public class HomeStore {
         }
     }
 
+    /** A player's homes without keeping them in memory afterwards; for offline players and bulk reads. */
+    public List<Home> peek(UUID owner) {
+        Map<String, Home> cached = cache.get(owner);
+        if (cached != null) return homes(owner);
+        Map<String, Home> read = read(owner);
+        List<Home> list = read == null ? new ArrayList<>() : new ArrayList<>(read.values());
+        list.sort(Comparator.comparing(Home::key));
+        return list;
+    }
+
     public Optional<Home> home(UUID owner, String name) {
         Map<String, Home> homes = loaded(owner);
         synchronized (homes) {
@@ -122,9 +132,15 @@ public class HomeStore {
     }
 
     private Map<String, Home> loaded(UUID owner) {
-        return cache.computeIfAbsent(owner, this::read);
+        return cache.computeIfAbsent(owner, key -> {
+            Map<String, Home> homes = read(key);
+            if (homes != null) return homes;
+            unreadable.add(key);
+            return new LinkedHashMap<>();
+        });
     }
 
+    /** The player's homes, or null when the file exists but cannot be read. */
     private Map<String, Home> read(UUID owner) {
         Map<String, Home> homes = new LinkedHashMap<>();
         File file = file(owner);
@@ -139,12 +155,13 @@ public class HomeStore {
                     logger.warning("Skipping invalid home '" + key + "' in " + file.getName());
                     continue;
                 }
-                homes.put(Names.key(name), new Home(owner, name, location, entry.getLong("created", 0L)));
+                homes.put(Names.key(name), new Home(owner, name, location, entry.getLong("created", 0L),
+                        entry.getBoolean("public", false)));
             }
         } catch (Exception exception) {
-            unreadable.add(owner);
             logger.severe("Could not read " + file.getPath() + "; these homes stay read-only until the file is fixed: "
                     + exception.getMessage());
+            return null;
         }
         return homes;
     }
@@ -160,6 +177,7 @@ public class HomeStore {
             ConfigurationSection entry = data.createSection("homes." + home.key());
             entry.set("name", home.name());
             entry.set("created", home.createdAt());
+            entry.set("public", home.publicHome() ? true : null);
             home.location().write(entry);
         }
         YamlFiles.save(data, file);

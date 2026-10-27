@@ -2,6 +2,9 @@ package dev.dyhomes.command;
 
 import dev.dyhomes.DyHomes;
 import dev.dyhomes.importer.EssentialsImporter;
+import dev.dyhomes.importer.HuskHomesImporter;
+import dev.dyhomes.storage.PublicHomeIndex;
+import java.io.File;
 import dev.dyhomes.lang.Language;
 import dev.dyhomes.lang.MessageService;
 import dev.dyhomes.model.Home;
@@ -22,7 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-/** /dyhomes: help, language, reload and the EssentialsX import. Turkish subcommands are accepted too. */
+/** /dyhomes: help, language, reload and the EssentialsX and HuskHomes imports. Turkish subcommands are accepted too. */
 public class DyHomesCommand implements CommandExecutor, TabCompleter {
     private final DyHomes plugin;
     private final MessageService messages;
@@ -30,16 +33,18 @@ public class DyHomesCommand implements CommandExecutor, TabCompleter {
     private final HomeStore homes;
     private final WarpStore warps;
     private final SpawnStore spawns;
+    private final PublicHomeIndex publicHomes;
     private final AtomicBoolean importing = new AtomicBoolean();
 
     public DyHomesCommand(DyHomes plugin, MessageService messages, PlayerDataStore players, HomeStore homes,
-                          WarpStore warps, SpawnStore spawns) {
+                          WarpStore warps, SpawnStore spawns, PublicHomeIndex publicHomes) {
         this.plugin = plugin;
         this.messages = messages;
         this.players = players;
         this.homes = homes;
         this.warps = warps;
         this.spawns = spawns;
+        this.publicHomes = publicHomes;
     }
 
     @Override
@@ -99,13 +104,20 @@ public class DyHomesCommand implements CommandExecutor, TabCompleter {
             messages.send(sender, "general.no-permission");
             return;
         }
-        if (args.length < 2 || !Commands.matches(args[1], "essentials", "essentialsx")) {
+        boolean husk = args.length >= 2 && Commands.matches(args[1], "huskhomes", "husk");
+        if (args.length < 2 || !husk && !Commands.matches(args[1], "essentials", "essentialsx")) {
             messages.send(sender, "import.usage");
             return;
         }
-        EssentialsImporter importer = new EssentialsImporter(plugin.getDataFolder().getParentFile(), plugin.getLogger());
-        if (!importer.present()) {
-            messages.send(sender, "import.not-found");
+        File plugins = plugin.getDataFolder().getParentFile();
+        EssentialsImporter essentials = new EssentialsImporter(plugins, plugin.getLogger());
+        HuskHomesImporter huskHomes = new HuskHomesImporter(plugins, new File(plugin.getDataFolder(), "tmp"), plugin.getLogger());
+        if (husk ? !huskHomes.present() : !essentials.present()) {
+            messages.send(sender, husk ? "import.husk-not-found" : "import.not-found");
+            return;
+        }
+        if (husk && !huskHomes.databaseType().equals("SQLITE")) {
+            messages.send(sender, "import.husk-database", Map.of("{type}", huskHomes.databaseType()));
             return;
         }
         if (!importing.compareAndSet(false, true)) {
@@ -115,8 +127,20 @@ public class DyHomesCommand implements CommandExecutor, TabCompleter {
         messages.send(sender, "import.started");
         plugin.scheduler().runAsync(() -> {
             try {
-                EssentialsImporter.Result read = importer.read();
-                int[] counts = apply(read);
+                EssentialsImporter.Result read;
+                Map<java.util.UUID, String> names = Map.of();
+                if (husk) {
+                    HuskHomesImporter.Result husked = huskHomes.read();
+                    read = new EssentialsImporter.Result();
+                    read.homes.addAll(husked.homes);
+                    read.warps.addAll(husked.warps);
+                    read.skipped = husked.skipped;
+                    names = husked.names;
+                } else {
+                    read = essentials.read();
+                }
+                int[] counts = apply(read, names);
+                plugin.maps().refresh();
                 plugin.scheduler().runGlobal(() -> {
                     Map<String, String> values = new java.util.HashMap<>();
                     values.put("{homes}", String.valueOf(counts[0]));
@@ -126,8 +150,8 @@ public class DyHomesCommand implements CommandExecutor, TabCompleter {
                     values.put("{skipped}", String.valueOf(read.skipped + read.unreadable + counts[4]));
                     messages.send(sender, "import.done", values);
                 });
-            } catch (RuntimeException failure) {
-                plugin.getLogger().warning("Essentials import failed: " + failure);
+            } catch (Exception failure) {
+                plugin.getLogger().warning((husk ? "HuskHomes" : "Essentials") + " import failed: " + failure);
                 plugin.scheduler().runGlobal(() -> messages.send(sender, "import.failed"));
             } finally {
                 importing.set(false);
@@ -136,7 +160,7 @@ public class DyHomesCommand implements CommandExecutor, TabCompleter {
     }
 
     /** Adds what DyHomes does not have yet: homes, warps, kept, failed. Never replaces an existing entry. */
-    private int[] apply(EssentialsImporter.Result read) {
+    private int[] apply(EssentialsImporter.Result read, Map<java.util.UUID, String> names) {
         int addedHomes = 0, addedWarps = 0, addedSpawn = 0, kept = 0, failed = 0;
         List<java.util.UUID> touched = new ArrayList<>();
         for (Home home : read.homes) {
@@ -148,6 +172,12 @@ public class DyHomesCommand implements CommandExecutor, TabCompleter {
                 homes.put(home);
                 addedHomes++;
                 touched.add(home.owner());
+                if (home.publicHome()) {
+                    String owner = names.get(home.owner());
+                    if (owner == null) owner = plugin.getServer().getOfflinePlayer(home.owner()).getName();
+                    if (owner == null) owner = home.owner().toString().substring(0, 8);
+                    publicHomes.update(home, owner, true);
+                }
             } catch (IOException failure) {
                 failed++;
             }
@@ -195,7 +225,7 @@ public class DyHomesCommand implements CommandExecutor, TabCompleter {
             return Commands.complete(args[1], codes);
         }
         if (args.length == 2 && Commands.matches(args[0], "import", "aktar") && sender.hasPermission("dyhomes.admin")) {
-            return Commands.complete(args[1], List.of("essentials"));
+            return Commands.complete(args[1], List.of("essentials", "huskhomes"));
         }
         return List.of();
     }

@@ -46,6 +46,15 @@ public class TeleportService {
      * {@code forceCommand} is the command that skips the safety check, shown when the destination is unsafe.
      */
     public void request(Player player, TeleportKind kind, String name, Location destination, String forceCommand, boolean force) {
+        request(player, kind, name, destination, forceCommand, force, kind == TeleportKind.HOME ? player.getUniqueId() : null);
+    }
+
+    /**
+     * Like {@link #request(Player, TeleportKind, String, Location, String, boolean)}, with DyClaim access checked for
+     * {@code claimOwner}: the player for their own homes, the owner for a public home, null for no check.
+     */
+    public void request(Player player, TeleportKind kind, String name, Location destination, String forceCommand, boolean force,
+                        UUID claimOwner) {
         cancelSilently(player);
         Map<String, String> values = values(name);
         if (destination == null || destination.getWorld() == null) {
@@ -64,8 +73,9 @@ public class TeleportService {
             messages.send(player, "teleport.not-enough-money", values);
             return;
         }
-        if (kind == TeleportKind.HOME) {
-            ClaimAccess.Result access = claims.canUse(player, destination);
+        if (claimOwner != null) {
+            ClaimAccess.Result access = claimOwner.equals(player.getUniqueId()) ? claims.canUse(player, destination)
+                    : claims.canUseAs(claimOwner, player, destination);
             if (access == ClaimAccess.Result.DENIED) {
                 messages.send(player, "teleport.claim-denied", values);
                 return;
@@ -146,6 +156,7 @@ public class TeleportService {
             messages.send(player, "teleport.not-enough-money", values);
             return;
         }
+        Location from = player.getLocation().clone();
         scheduler.teleport(player, request.destination).whenComplete((success, failure) -> scheduler.run(player, () -> {
             if (failure != null || !Boolean.TRUE.equals(success)) {
                 payment.refund();
@@ -153,6 +164,8 @@ public class TeleportService {
                 sound(player, "failed");
                 return;
             }
+            // Folia fires no PlayerTeleportEvent for asynchronous teleports, so /back learns about our own here too.
+            if (plugin.back() != null) plugin.back().teleported(player, from, request.destination);
             startCooldown(player, request.kind);
             messages.send(player, "teleport.success-" + request.kind.key(), values);
             if (payment.amount() > 0) {

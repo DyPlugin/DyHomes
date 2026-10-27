@@ -34,10 +34,22 @@ public class ClaimAccess {
         return check(player, location, plugin.getConfig().getString("dyclaim.use-right", "teleport"));
     }
 
+    /**
+     * May the owner of a public home still use it? Visitors of a public home follow its owner's access,
+     * so a home in the owner's own claim stays visitable while a home in a claim the owner lost does not.
+     */
+    public Result canUseAs(UUID owner, Player visitor, Location location) {
+        if (visitor.hasPermission("dyhomes.bypass.claims")) return Result.ALLOWED;
+        return check(owner, location, plugin.getConfig().getString("dyclaim.use-right", "teleport"));
+    }
+
     Result check(Player player, Location location, String right) {
-        if (!plugin.getConfig().getBoolean("dyclaim.enabled", true) || player.hasPermission("dyhomes.bypass.claims")) {
-            return Result.ALLOWED;
-        }
+        if (player.hasPermission("dyhomes.bypass.claims")) return Result.ALLOWED;
+        return check(player.getUniqueId(), location, right);
+    }
+
+    Result check(UUID subject, Location location, String right) {
+        if (!plugin.getConfig().getBoolean("dyclaim.enabled", true)) return Result.ALLOWED;
         Plugin dyClaim = plugin.getServer().getPluginManager().getPlugin("DyClaim");
         if (dyClaim == null) return Result.ALLOWED;
         if (!dyClaim.isEnabled()) return Result.UNAVAILABLE;
@@ -49,7 +61,7 @@ public class ClaimAccess {
             if (optional.isEmpty()) return Result.ALLOWED;
             Class<?> claimType = Class.forName("dev.dyclaim.api.Claim", true, dyClaim.getClass().getClassLoader());
             Method allows = claimType.getMethod("allows", UUID.class, String.class);
-            Object allowed = allows.invoke(optional.get(), player.getUniqueId(), right);
+            Object allowed = allows.invoke(optional.get(), subject, right);
             if (!(allowed instanceof Boolean value)) return Result.UNAVAILABLE;
             return value ? Result.ALLOWED : Result.DENIED;
         } catch (ClassNotFoundException | NoSuchMethodException missing) {
